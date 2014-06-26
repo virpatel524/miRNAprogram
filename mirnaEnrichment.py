@@ -111,6 +111,8 @@ def disagedict(dis2mirna, mirna2age,mirna2dis):
 	age2dis = {}
 	mirnanodis = []
 
+	# we exclude the case where an age is not present in your database. This could be simply due to a lack of data and thus it isn't very helpful
+
 	for key in dis2mirna:
 		temp = dis2mirna[key]
 		ageslst = []
@@ -119,12 +121,14 @@ def disagedict(dis2mirna, mirna2age,mirna2dis):
 				agelst.append(mirna2age[i])
 		dis2age[key] = ageslst
 
+	# here we  account for no disease assocation.	
+
 	for mirna in mirna2age:
 		if mirna in mirna2dis:
 			dis = mirna2dis[mirna]
 
 			for d in dis:
-				age2dis.setdefault(mirna2age[mirna2age],[]).appned(d)
+				age2dis.setdefault(mirna2age[mirna],[]).appned(d)
 		else:
 			mirnanodis.append(mirna)
 
@@ -186,9 +190,9 @@ def main():
 	if famfle != "":
 		fam2kids, kids2fam = famdicts(famfle)
 
-
-
 	dis2age, age2dis, mirnanodis = disagedict(dis2mirna, mirna2age, mirna2dis)
+
+	
 
 
 
