@@ -83,8 +83,7 @@ def famdicts(famfle):
 			kids2fam[el] = temp[0]
 	return fam2kids, kids2fam
 
-# creates dictionaries identifying the miRNA ages associated with a disease as well as the diseases associated with a miRNA
-# also returns a list of all miRNAs that have no disease association according to the data given
+# creates dictionaries mapping diseases to associated miRNAs and vice versa
 
 def diseasedict(disfle):
 	fle = open(disfle,"r")
@@ -189,7 +188,7 @@ def main():
 
 
 
-	dis2age, age2dis, mirnanodis = disagedict(dis2mirna, mirna2age, mirna2dis)x
+	dis2age, age2dis, mirnanodis = disagedict(dis2mirna, mirna2age, mirna2dis)
 
 
 
