@@ -2,6 +2,7 @@ import sys
 import getopt
 import os
 import string
+import matplotlib.pyplot as plt
 usage = """
 miRich analyzes enrichment levels for microRNA (miRNA) ages in diseases 
 or any other biological processes related to miRNAs. 
@@ -59,6 +60,26 @@ def deletebn(line):
 	return string.replace(line, "\n", "")
 def splitt(line):
 	return(line.split("\t"))
+
+
+
+def makeplot(age2mirna):
+	binlst = map(int,age2mirna.keys())
+	binlst.sort()
+
+	freq = np.bincount(np.array(binlst),weights=None,minlength=17)
+
+	pos = np.arange(len(ranger))
+	width = 1.0
+	ax = plt.axes()
+	ax.set_xticks(pos + (width / 2))
+	ax.set_xticklabels(ranger)
+	plt.bar(pos,freq,width)
+	plt.xlim(pos.min(),pos.max()+width)
+	plt.savefig("bincounts/"+str(j)+"_binplot.png")
+
+	plt.close()
+
 
 # method that forms dictionaries identifying which family a miRNA belongs to as well as the children of a miRNA family 
 
@@ -192,7 +213,10 @@ def main():
 
 	dis2age, age2dis, mirnanodis = disagedict(dis2mirna, mirna2age, mirna2dis)
 
-	
+
+
+
+
 
 
 
