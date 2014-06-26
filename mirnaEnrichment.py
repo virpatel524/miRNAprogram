@@ -58,6 +58,10 @@ def mirnaagedicts(agefileloc):
 
 # helper methods to save time
 
+def chunks(l, n):
+    for i in xrange(0, len(l), n):
+        yield l[i:i+n]
+
 
 def deletebn(line):
 	return string.replace(line, "\n", "")
@@ -72,6 +76,14 @@ def flatten(l):
 			newlst.append(each)
 
 	return newlst
+
+
+def boxplots(dis2age,keys):
+	lst = []
+	for element in keys:
+		lst.append(dis2age[element])
+	plt.boxplot(lst,keys)
+	
 
 
 
@@ -155,7 +167,7 @@ def disagedict(dis2mirna, mirna2age,mirna2dis):
 		ageslst = []
 		for i in temp:
 			if i in mirna2age:
-				agelst.append(mirna2age[i])
+				ageslst.append(mirna2age[i])
 		dis2age[key] = ageslst
 
 	# here we  account for no disease assocation.	
@@ -165,7 +177,7 @@ def disagedict(dis2mirna, mirna2age,mirna2dis):
 			dis = mirna2dis[mirna]
 
 			for d in dis:
-				age2dis.setdefault(mirna2age[mirna],[]).appned(d)
+				age2dis.setdefault(mirna2age[mirna],[]).append(d)
 		else:
 			mirnanodis.append(mirna)
 
@@ -219,7 +231,7 @@ def main():
 		
 	mirna2age,age2mirna = mirnaagedicts(agefle)
 	makeplot(mirna2age)
-
+	dis2mirna, mirna2dis = diseasedict(enrichfle)
 	
 	
 	fam2kids = {}
@@ -229,7 +241,15 @@ def main():
 		fam2kids, kids2fam = famdicts(famfle)
 
 	dis2age, age2dis, mirnanodis = disagedict(dis2mirna, mirna2age, mirna2dis)
-	dis2mirna, mirna2dis = diseasedict(enrichfle)
+
+	
+
+
+
+
+
+
+
 
 	
 
