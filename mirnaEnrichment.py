@@ -3,6 +3,9 @@ import getopt
 import os
 import string
 import matplotlib.pyplot as plt
+import numpy as np
+import scipy as scs
+
 usage = """
 miRich analyzes enrichment levels for microRNA (miRNA) ages in diseases 
 or any other biological processes related to miRNAs. 
@@ -60,14 +63,24 @@ def deletebn(line):
 	return string.replace(line, "\n", "")
 def splitt(line):
 	return(line.split("\t"))
+def flatten(l):
+	newlst = []
+	print l
+
+	for el in l:
+		for each in el:
+			newlst.append(each)
+
+	return newlst
 
 
 
-def makeplot(age2mirna):
-	binlst = map(int,age2mirna.keys())
+def makeplot(mirna2age):
+	binlst = map(int, mirna2age.values())
 	binlst.sort()
+	ranger = range(0,binlst[-1]+1)
 
-	freq = np.bincount(np.array(binlst),weights=None,minlength=17)
+	freq = np.bincount(np.array(binlst),weights=None)
 
 	pos = np.arange(len(ranger))
 	width = 1.0
@@ -76,7 +89,10 @@ def makeplot(age2mirna):
 	ax.set_xticklabels(ranger)
 	plt.bar(pos,freq,width)
 	plt.xlim(pos.min(),pos.max()+width)
-	plt.savefig("bincounts/"+str(j)+"_binplot.png")
+	if not os.path.exists("results"):
+		os.makedirs("results")
+	os.chdir("results")
+	plt.savefig("agesbincount.png")
 
 	plt.close()
 
@@ -202,8 +218,9 @@ def main():
 		sys.exit("YOU MUST HAVE AN ASSOCIATION FILE")		
 		
 	mirna2age,age2mirna = mirnaagedicts(agefle)
+	makeplot(mirna2age)
 
-	dis2mirna, mirna2dis = diseasedict(enrichfle)
+	
 	
 	fam2kids = {}
 	kids2fam = {}
@@ -212,6 +229,9 @@ def main():
 		fam2kids, kids2fam = famdicts(famfle)
 
 	dis2age, age2dis, mirnanodis = disagedict(dis2mirna, mirna2age, mirna2dis)
+	dis2mirna, mirna2dis = diseasedict(enrichfle)
+
+	
 
 
 
