@@ -5,6 +5,8 @@ import string
 import matplotlib.pyplot as plt
 import numpy as np
 import scipy as scs
+import scipy.stats as sstats
+import random
 
 usage = """
 miRich analyzes enrichment levels for microRNA (miRNA) ages in diseases 
@@ -14,22 +16,22 @@ Tabs are used to seperate the elements of each line
 
 Command line arguments:
 
--h: print this message
+-h: display this message
 
 -a: file of miRNAs with ages in the following format:
 miRNAname	age
-Ages can be in terms of node length in a phylogenetic tree file or it can be age in million years.
-To obtain this file, we recommend you use ProteinHistorian (doi:10.1371/journal.pcbi.1002567)
+Ages should be quantitative, not expressed in terms of pylogenetic tree distance
+To obtain an age file for your set of miRNAs, we recommend you use ProteinHistorian (doi:10.1371/journal.pcbi.1002567)
 
--f: list of miRNA families and members of the family in the following format:
-fam_name	mem1	mem2	mem3
+-f: list of miRNA families and members of the families in the following format for each line:
+fam	mem1	mem2	mem3
+fam2	mem1	mem2	mem3
 
 -d: file containing a miRNA with its disease or other biological function
 mirna associated_disease
 UPREGULATE DOWNREGULATE????
 
 -t: phylogenetic tree file in the Newick format. Can be used to determine age enrichments for certain clades
-
 """
 
 # method that creates a dictionary for a miRNA to its age and all ages to the miRNAs in the respective age categories
@@ -69,7 +71,7 @@ def splitt(line):
 	return(line.split("\t"))
 def flatten(l):
 	newlst = []
-	print l
+	
 
 	for el in l:
 		for each in el:
@@ -104,14 +106,45 @@ def makeplot(mirna2age):
 	if not os.path.exists("results"):
 		os.makedirs("results")
 	os.chdir("results")
+	if not os.path.exists("bincounts"):
+		os.makedirs("bincounts")	
+	if not os.path.exists("txtfiles"):
+		os.makedirs("txtfiles")
+
+	os.chdir("..")
+	os.chdir("results/bincounts")
+
 	plt.savefig("agesbincount.png")
 
+	os.chdir("..")
+	os.chdir("txtfiles")
+
+	agesbin = {}
+
+	for el in mirna2age.values():
+		if el not in agesbin:
+			agesbin[el] = 1
+		else:
+			agesbin[el] += 1
+
+	fle = open("agecounts.txt","w")
+
+	for key in agesbin:
+		fle.write(str(key) + "\t" + str(agesbin[key]) + "\n")
+	
 	plt.close()
 
+def validcheck(el,posmirna):
+	returner = []
+	for i in el:
+		if i in posmirna[0] or i in posmirna[1]:
+			returner.append(i)
+	return returner
 
-# method that forms dictionaries identifying which family a miRNA belongs to as well as the children of a miRNA family 
+# method that forms dictionaries identifying which family a miRNA belongs to as well as the children of a miRNA family
+# we have to account for miRNAs in the family file for which there are no ages. As such, in fam2kids, we do not include  
 
-def famdicts(famfle):
+def famdicts(famfle,posmirna):
 	fle = open(famfle,"r")
 	text = fle.readlines()
 	fle.close()
@@ -126,9 +159,11 @@ def famdicts(famfle):
 		temp = deletebn(line)
 		temp = temp.split("\t")
 
-		fam2kids[temp[0]] = temp[1:]
+		temp1 = validcheck(temp[1:],posmirna);
+		if len(temp1) > 0:
+			fam2kids[temp[0]] = temp1
 
-		for el in temp[1:]:
+		for el in validcheck(temp[1:],posmirna):
 			kids2fam[el] = temp[0]
 	return fam2kids, kids2fam
 
@@ -183,9 +218,47 @@ def disagedict(dis2mirna, mirna2age,mirna2dis):
 
 	return dis2age, age2dis, mirnanodis
 			
+def dictmap(dic, lst):
+	newlst = []
+	for el in lst:
+		newlst.append(dic[el])
+	return newlst
+
+def randomages(kids2age,length):
+	allages = kids2age.values()
+	agedicts = []
+	for i in range(0,10000):
+		ages = random.sample(allages, length)
+
+		agedicts.append(np.mean(ages))
+	return agedicts
+
+
+def famagetesting(fam2kids,kids2age):
+	famaverage = {}
+	fammedian = {}
+	famstd = {}
+	fam2random = {}
+	for fam in fam2kids:
+		if fam2kids[fam] != []:
+			famaverage[fam] = np.mean(dictmap(kids2age, fam2kids[fam]))
+			fammedian[fam] = np.median(dictmap(kids2age, fam2kids[fam]))
+
+	number = 0
+	famnum = len(fam2kids.keys())		
+	for fam in fam2kids:
+		fam2random[fam] = randomages(kids2age, len(fam2kids[fam]))
+		number += 1
+		print "family completed:", number, "out of ", famnum
+
+	
 
 
 
+	
+
+
+	
 
 
 
@@ -230,17 +303,23 @@ def main():
 		sys.exit("YOU MUST HAVE AN ASSOCIATION FILE")		
 		
 	mirna2age,age2mirna = mirnaagedicts(agefle)
+	
+	mirnawage = mirna2age.keys()
 	makeplot(mirna2age)
 	dis2mirna, mirna2dis = diseasedict(enrichfle)
+	
+	mirnawdis = dis2mirna.keys()
+	posmirna = (mirnawage,mirnawdis)
 	
 	
 	fam2kids = {}
 	kids2fam = {}
 
 	if famfle != "":
-		fam2kids, kids2fam = famdicts(famfle)
+		fam2kids, kids2fam = famdicts(famfle,posmirna)
 
 	dis2age, age2dis, mirnanodis = disagedict(dis2mirna, mirna2age, mirna2dis)
+	famagetesting(fam2kids, mirna2age)
 
 	
 
@@ -260,10 +339,6 @@ def main():
 
 
 
-
-
-
-	
 
 
 main()
