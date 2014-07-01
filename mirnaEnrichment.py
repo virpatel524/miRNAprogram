@@ -85,6 +85,15 @@ def boxplots(dis2age,keys):
 	for element in keys:
 		lst.append(dis2age[element])
 	plt.boxplot(lst,keys)
+
+def select(lst, setting):
+	newlst = []
+
+	for el in lst:
+		if eval(setting):
+			newlst.append(el)
+
+	return el
 	
 
 
@@ -251,14 +260,29 @@ def famagetesting(fam2kids,kids2age):
 		number += 1
 		print "family completed:", number, "out of ", famnum
 
-	
+
+	empps = {}
+
+	for fam in fam2random:
+		counter = 0
+# anything more efficient than this?
+
+		for el in fam2random[fam]:
+			if abs(float(famaverage[fam]) - float(el))  < .0001:
+				counter += 1
+
+		empps[fam] = float(counter) / float(10000)
+
+
+
+	return empps	
 
 
 
 	
 
 
-	
+# HEY VIR MAKE SURE TO CHANGE 100 TO 10000
 
 
 
@@ -319,7 +343,10 @@ def main():
 		fam2kids, kids2fam = famdicts(famfle,posmirna)
 
 	dis2age, age2dis, mirnanodis = disagedict(dis2mirna, mirna2age, mirna2dis)
-	famagetesting(fam2kids, mirna2age)
+	
+
+	empiricalps = famagetesting(fam2kids, mirna2age)
+	print empiricalps
 
 	
 
