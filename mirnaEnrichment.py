@@ -11,10 +11,13 @@ import matplotlib.axes as axis
 import pylab
 
 usage = """
-miRich analyzes enrichment levels for microRNA (miRNA) ages in diseases 
+mirVIR analyzes enrichment levels for microRNA (miRNA) ages in diseases or any other enrichments 
 or any other biological processes related to miRNAs. 
 
-Tabs are used to seperate the elements of each line
+Tabs are used to separate the elements of each line.
+
+DEPENDENCIES: NumPy, matplotlib, and SciPy
+Pip (https://pypi.python.org/pypi/pip) provides the simplest way to install each dependency
 
 Command line arguments:
 
@@ -26,14 +29,24 @@ Ages should be quantitative, not expressed in terms of pylogenetic tree distance
 To obtain an age file for your set of miRNAs, we recommend you use ProteinHistorian (doi:10.1371/journal.pcbi.1002567)
 
 -f: list of miRNA families and members of the families in the following format for each line:
-fam	mem1	mem2	mem3
-fam2	mem1	mem2	mem3
+fam1 mem1
+fam1 mem2
+fam2 mem1
+fam1 mem3
+
+for example
 
 -d: file containing a miRNA with its disease or other biological function
 mirna associated_disease
 UPREGULATE DOWNREGULATE????
 
 -t: phylogenetic tree file in the Newick format. Can be used to determine age enrichments for certain clades. This currently does nothing.
+
+-y: specifies the format of the ages presented in the age file. If the user gives a parameter that starts with the letter m ('mya', 'million-years-ago',
+	'muffin'), then the program interprets the age readings as actual ages rather than distances on a phylogenetic tree
+
+If you wish for the enrichment you study to be miRNA families, simply replace the disease file with the family file. If you would like 
+the complte age analyses, please repeat using the -f command
 
 
 """
@@ -75,8 +88,6 @@ def splitt(line):
 	return(line.split("\t"))
 def flatten(l):
 	newlst = []
-	
-
 	for el in l:
 		for each in el:
 			newlst.append(each)
@@ -102,7 +113,7 @@ def select(lst, setting):
 
 
 
-def makeplot(mirna2age,agefle):
+def makeplot(mirna2age,disfle):
 	binlst = map(int, mirna2age.values())
 	binlst.sort()
 	ranger = range(0,binlst[-1]+1)
@@ -123,7 +134,7 @@ def makeplot(mirna2age,agefle):
 		os.makedirs("results")
 	os.chdir("results")
 
-	filename = agefle
+	filename = disfle
 	filename  = filename.split("/")
 
 	filename = filename[-1]
@@ -185,9 +196,9 @@ def enrichfrac(dis2mirna,mirna2age,dis,endpt):
 
 def makenrichplots(dis2mirna,mirna2age):
 	os.chdir("..")
-	if not os.path.exists("diseasecomp"):
-		os.makedirs("diseasecomp")
-	os.chdir("diseasecomp")
+	if not os.path.exists("enrichcomp"):
+		os.makedirs("enrichcomp")
+	os.chdir("enrichcomp")
 
 
 	allages = sorted(mirna2age.values())
@@ -205,14 +216,14 @@ def makenrichplots(dis2mirna,mirna2age):
 
 	fle = open("disvsbg.txt","w")
 
-	PREAMBLE = "DISEASE\tAVG AGE\tMED AGE\tPVALUE\n"
+	PREAMBLE = "ENRICHMENT\tAVG AGE\tMED AGE\tPVALUE\n"
 	PREAMBLE += "Background\t%.4f\t%.4f\t\n" %(np.mean(allages),np.median(allages))
 
 	fle.write(PREAMBLE)
 
 	os.chdir("..")
 
-	os.chdir("diseasecomp")
+	os.chdir("enrichcomp")
 
 
 
@@ -257,18 +268,12 @@ def makenrichplots(dis2mirna,mirna2age):
 			ax.set_title('miRNA Age Enrichments \n' + mwu_str)
 			ax.set_xticks(ind)
 
-			
-
-			
-			
-
-
 			ymin = ax.viewLim.ymin
 			ymax = ax.viewLim.ymax
 			y_range = ymax - ymin
 			ax.set_ylim(-.05 * y_range, ymax + (.23 * y_range))
 			
-			ax.legend( (rects1[0], rects2[0]), ('Background (N = ' + str(len(mirna2age)) +")" , 'Disease (N = ' +str(len( dis2mirna[dis])  ) + ")") ) 
+			ax.legend( (rects1[0], rects2[0]), ('Background (N = ' + str(len(mirna2age)) +")" , 'Enrichment (N = ' +str(len( dis2mirna[dis])  ) + ")") ) 
 
 			plt.savefig(dis.replace(" ","") + ".png")
 			
@@ -320,11 +325,11 @@ def famdicts(famfle,posmirna):
 		temp = deletebn(line)
 		temp = temp.split("\t")
 
-		temp1 = validcheck(temp[1:],posmirna);
+		temp1 = validcheck(temp[1],posmirna);
 		if len(temp1) > 0:
-			fam2kids[temp[0]] = temp1
+			fam2kids.setdefault(temp[0],[]).append(temp1)
 
-		for el in validcheck(temp[1:],posmirna):
+		for el in validcheck(temp[1],posmirna):
 			kids2fam[el] = temp[0]
 	return fam2kids, kids2fam
 
@@ -467,9 +472,8 @@ def famagetesting(fam2kids,kids2age):
 	return 	
 
 
-# Determine  correlation:
-
-# Correlation between the age of a disease miRNA and the number of diseases it's associated with
+# Correlation between the age of a disease miRNA and the number of diseases it's associated with.
+# More correlations can be added later
 
 
 
@@ -495,9 +499,9 @@ def othercorrs(mirna2age,mirna2dis,dis2mirna):
 		agebins[age].append(length)
 
 
-	fle = open("diseaseagesize.txt","w")
+	fle = open("enrichagetxt.txt","w")
 
-	fle.write("Correlation between the age of a miRNA and the number of diseases it is associated with\n")
+	fle.write("Correlation between the age of a miRNA and the number of enrichments it is associated with\n")
 	fle.write("Coefficient: %.4f\n" % (agedislen))
 	fle.write("p-value: %.4e\n" % (agedis_pval))
 	fle.close()
@@ -505,9 +509,9 @@ def othercorrs(mirna2age,mirna2dis,dis2mirna):
 	plt.close()
 	
 
-	plt.title("miRNA-Disease Association Relationships")
+	plt.title("miRNA-Enrichment Association Relationships")
 	plt.xlabel("Age Bins") 
-	plt.ylabel('Number of Disease Associations')
+	plt.ylabel('Number of Enrichment Associations')
 
 	plt.boxplot(agebins)
 
@@ -555,23 +559,6 @@ def milyearanalysis(mirna2age):
 	return 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 def main():
 
     # take command line arguments and put them in an interpretable format
@@ -591,7 +578,7 @@ def main():
 	enrichfle = ""
 	famfle = ""
 	treefle = ""
-	myaorother = ""
+	myaorother = "v"
 
 	for el in opts:
 		if el[0] == "-h":
@@ -611,12 +598,15 @@ def main():
 	if agefle == "":
 		sys.exit("YOU MUST HAVE AN AGE FILE")
 	if enrichfle == "":
-		sys.exit("YOU MUST HAVE AN ASSOCIATION FILE")		
+		sys.exit("YOU MUST HAVE AN ASSOCIATION FILE")
+
+
+	#			
 		
 	mirna2age,age2mirna = mirnaagedicts(agefle)
 	
 	mirnawage = mirna2age.keys()
-	makeplot(mirna2age,agefle)
+	makeplot(mirna2age,enrichfle)
 	dis2mirna, mirna2dis = diseasedict(enrichfle,mirna2age)
 	
 	mirnawdis = dis2mirna.keys()
@@ -640,9 +630,9 @@ def main():
 
 
 	print "--------------------------------------------------"
-	print "DISEASE AGE ENRICHMENT"
+	print "AGE ENRICHMENTS"
 
-	print "NOTE: IMAGES ONLY GENERATED FOR DISEASES WITH MORE THAN 4 ASSOCIATED MIRNAS"
+	print "NOTE: IMAGES ONLY GENERATED FOR ENRICHMENTS WITH MORE THAN 4 ASSOCIATED MIRNAS"
 	time.sleep(2)
 
 
@@ -666,7 +656,7 @@ def main():
 
 
 
-
+##### Doing some of these analyses makes sense for diseases, but not for other enrichments
 	
 
 
