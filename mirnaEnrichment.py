@@ -451,11 +451,10 @@ def famagetesting(fam2kids,kids2age):
 
 
 
+def othercorrs(mirna2age,mirna2dis,dis2mirna):
 
 	
 
-
-# HEY VIR MAKE SURE TO CHANGE 100 TO 10000
 
 
 
