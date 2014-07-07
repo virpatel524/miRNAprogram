@@ -452,8 +452,40 @@ def famagetesting(fam2kids,kids2age):
 
 
 def othercorrs(mirna2age,mirna2dis,dis2mirna):
+	ageslst1 = []
+	numdislst1 = []
 
-	
+	for mirna in mirna2dis:
+		ageslst1.append(mirna2age[mirna])
+		numdislst1.append(len(mirna2dis[dis]))
+
+	agedislen,agedis_pval = scs.spearmanr(ageslst1,numdislst1)
+
+	agesbin = []
+
+	for i in range(0, int(max(mirna2age.values())) ):
+		agesbin.append(i)
+
+	howmany = []
+
+	dismir = mirna2dis.keys()
+
+	for mir in dismir:
+		var = int(mirna2age[mir])
+		howmany[var]+=1
+
+	disagetend,disagetend_pval = scs.spearmanr(howmany,agesbin)
+
+	return
+
+
+
+
+
+
+
+
+
 
 
 
@@ -536,7 +568,7 @@ def main():
 	print "PLOT GENERATION COMPLETED"
 	print "FINAL CORRELATIONS"
 
-	othercors(mirna2age,mirna2dis,dis2mirna)
+	othercorrs(mirna2age,mirna2dis,dis2mirna)
 
 
 
