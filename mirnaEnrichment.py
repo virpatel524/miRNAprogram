@@ -7,6 +7,8 @@ import numpy as np
 import random
 import scipy.stats as scs
 import time
+import matplotlib.axes as axis
+import pylab
 
 usage = """
 miRich analyzes enrichment levels for microRNA (miRNA) ages in diseases 
@@ -98,7 +100,7 @@ def select(lst, setting):
 
 
 
-def makeplot(mirna2age):
+def makeplot(mirna2age,agefle):
 	binlst = map(int, mirna2age.values())
 	binlst.sort()
 	ranger = range(0,binlst[-1]+1)
@@ -118,13 +120,23 @@ def makeplot(mirna2age):
 	if not os.path.exists("results"):
 		os.makedirs("results")
 	os.chdir("results")
+
+	filename = agefle
+	filename  = filename.split("/")
+
+	filename = filename[-1]
+
+	if not os.path.exists(filename):
+		os.makedirs(filename)
+	os.chdir(filename)
+
 	if not os.path.exists("bincounts"):
 		os.makedirs("bincounts")	
 	if not os.path.exists("txtfiles"):
 		os.makedirs("txtfiles")
 
-	os.chdir("..")
-	os.chdir("results/bincounts")
+	
+	os.chdir("bincounts")
 
 	plt.savefig("agesbincount.png")
 
@@ -316,7 +328,7 @@ def famdicts(famfle,posmirna):
 
 # creates dictionaries mapping diseases to associated miRNAs and vice versa
 
-def diseasedict(disfle):
+def diseasedict(disfle,mirna2age):
 	fle = open(disfle,"r")
 	text = fle.readlines()
 	fle.close()
@@ -330,6 +342,9 @@ def diseasedict(disfle):
 
 		temp = deletebn(line)
 		temp = splitt(temp)
+
+		if temp[0] not in mirna2age:
+			continue
 
 		dis2mirna.setdefault(temp[1],[]).append(temp[0])
 		mirna2dis.setdefault(temp[0],[]).append(temp[1])
@@ -450,10 +465,10 @@ def famagetesting(fam2kids,kids2age):
 	return 	
 
 
-# Determine two correlations:
+# Determine  correlation:
 
 # Correlation between the age of a disease miRNA and the number of diseases it's associated with
-# Correlation between the age of a disease miRNA
+
 
 
 def othercorrs(mirna2age,mirna2dis,dis2mirna):
@@ -472,32 +487,72 @@ def othercorrs(mirna2age,mirna2dis,dis2mirna):
 	for i in range(0,int(max(mirna2age.values()) + 1)):
 		agebins.append([])
 
-
+	numberlst = range(0, int(max(mirna2age.values())+1))
 
 	for age,length in enum:
-		print age
 		agebins[age].append(length)
 
-	plt.close()
 
-	plt.title("Test Nigga!") 
+	fle = open("diseaseagesize.txt","w")
+
+	fle.write("Correlation between the age of a miRNA and the number of diseases it is associated with\n")
+	fle.write("Coefficient: %.4f\n" % (agedislen))
+	fle.write("p-value: %.4e\n" % (agedis_pval))
+	fle.close()
+
+	plt.close()
+	
+
+	plt.title("miRNA-Disease Association Relationships")
+	plt.xlabel("Age Bins") 
+	plt.ylabel('Number of Disease Associations')
 
 	plt.boxplot(agebins)
-	plt.show()
-	plt.close()
 
-
-
-
-
-
-
+	pylab.xticks([x+1 for x in numberlst],numberlst)
 	
+
+	os.chdir("..")
+
+	if not os.path.exists("diseasecor"):
+		os.makedirs("diseasecor")
+
+	os.chdir("diseasecor")
+
+	plt.savefig("mirnadisrel.png")
+	plt.close()
 
 
 
 
 	return
+
+
+def milyearanalysis(mirna2age):
+	bincount = list(np.bincount(mirna2age.values()))
+
+	years = sorted( list( set( mirna2age.values())))
+
+	agematrix = [0.0] * (len(years) - 1)
+
+	for index,age in enumerate(agematrix):
+		agematrix[index] = float(bincount[index]) / ( float(years[index+1]) - float(years[index]))
+
+	
+
+	os.chdir("..")
+
+	os.chdir("txtfiles")
+
+	fle = open("rateofacq.txt","w")
+	fle.write("Average Rates of miRNA Acquisition\n")
+
+	for index,el in enumerate(agematrix):
+		fle.write("%.2f new miRNAs per million years between %.2f MYA and %.2f MYA\n" %(el, years[index], years[index+1] )  )
+
+	return 
+
+
 
 
 
@@ -519,7 +574,7 @@ def main():
 
     # take command line arguments and put them in an interpretable format
 	try:
-		opts, args = getopt.getopt(sys.argv[1:], "a:e:h:d:f:t:")
+		opts, args = getopt.getopt(sys.argv[1:], "a:e:h:d:f:t:y:")
 	except getopt.GetoptError:
 		sys.exit(usage)
 
@@ -534,6 +589,8 @@ def main():
 	enrichfle = ""
 	famfle = ""
 	treefle = ""
+	myaorother = ""
+
 	for el in opts:
 		if el[0] == "-h":
 			sys.exit(usage)
@@ -545,6 +602,9 @@ def main():
 			famfle = el[1]
 		if el[0] == "-t":
 			treefle = el[1]
+		if el[0] == "-y":
+			myaorother = el[1]
+
 
 	if agefle == "":
 		sys.exit("YOU MUST HAVE AN AGE FILE")
@@ -554,8 +614,8 @@ def main():
 	mirna2age,age2mirna = mirnaagedicts(agefle)
 	
 	mirnawage = mirna2age.keys()
-	makeplot(mirna2age)
-	dis2mirna, mirna2dis = diseasedict(enrichfle)
+	makeplot(mirna2age,agefle)
+	dis2mirna, mirna2dis = diseasedict(enrichfle,mirna2age)
 	
 	mirnawdis = dis2mirna.keys()
 	posmirna = (mirnawage,mirnawdis)
@@ -574,23 +634,26 @@ def main():
 
 	if famfle != "":
 		# famagetesting(fam2kids, mirna2age)
-		x = 6
-
 		print "FAMILY AGE ANALYSIS COMPLETED"
+
+
 	print "--------------------------------------------------"
 	print "DISEASE AGE ENRICHMENT"
 
 	print "NOTE: IMAGES GENERATED ONLY FOR DISEASES WITH MORE THAN 4 ASSOCIATED MIRNAS"
-	# time.sleep(2)
+	time.sleep(2)
 
 
 	# makenrichplots(dis2mirna,mirna2age)
 
 	print "PLOT GENERATION COMPLETED"
-	print "FINAL CORRELATIONS"
 
 	othercorrs(mirna2age,mirna2dis,dis2mirna)
 
+	print "ALL ANALYSES COMPLETED"
+
+	if myaorother[0] == "m":
+		milyearanalysis(mirna2age)
 
 
 	

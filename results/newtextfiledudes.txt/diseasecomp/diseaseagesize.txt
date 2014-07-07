@@ -1,0 +1,3 @@
+Correlation between the age of a miRNA and the number of diseases it is associated with
+Coefficient: 0.7028
+p-value: 2.2161e-75
