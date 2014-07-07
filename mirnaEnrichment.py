@@ -33,7 +33,9 @@ fam2	mem1	mem2	mem3
 mirna associated_disease
 UPREGULATE DOWNREGULATE????
 
--t: phylogenetic tree file in the Newick format. Can be used to determine age enrichments for certain clades
+-t: phylogenetic tree file in the Newick format. Can be used to determine age enrichments for certain clades. This currently does nothing.
+
+
 """
 
 # method that creates a dictionary for a miRNA to its age and all ages to the miRNAs in the respective age categories
@@ -640,7 +642,7 @@ def main():
 	print "--------------------------------------------------"
 	print "DISEASE AGE ENRICHMENT"
 
-	print "NOTE: IMAGES GENERATED ONLY FOR DISEASES WITH MORE THAN 4 ASSOCIATED MIRNAS"
+	print "NOTE: IMAGES ONLY GENERATED FOR DISEASES WITH MORE THAN 4 ASSOCIATED MIRNAS"
 	time.sleep(2)
 
 
