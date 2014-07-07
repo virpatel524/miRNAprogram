@@ -462,11 +462,15 @@ def othercorrs(mirna2age,mirna2dis,dis2mirna):
 	agedislen,agedis_pval = scs.spearmanr(ageslst1,numdislst1)
 
 	agesbin = []
-
-	for i in range(0, int(max(mirna2age.values())) ):
-		agesbin.append(i)
-
 	howmany = []
+
+	for i in range(0, int(max(mirna2age.values()))+1 ):
+		agesbin.append(i)
+		howmany.append(0)
+
+
+	
+	
 
 	dismir = mirna2dis.keys()
 
@@ -474,7 +478,13 @@ def othercorrs(mirna2age,mirna2dis,dis2mirna):
 		var = int(mirna2age[mir])
 		howmany[var]+=1
 
+	print agesbin
+	print howmany
+
 	disagetend,disagetend_pval = scs.spearmanr(howmany,agesbin)
+
+	print disagetend,disagetend_pval
+
 
 	return
 
@@ -563,7 +573,7 @@ def main():
 	time.sleep(2)
 
 
-	makenrichplots(dis2mirna,mirna2age)
+	# makenrichplots(dis2mirna,mirna2age)
 
 	print "PLOT GENERATION COMPLETED"
 	print "FINAL CORRELATIONS"
