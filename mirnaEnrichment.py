@@ -457,7 +457,7 @@ def othercorrs(mirna2age,mirna2dis,dis2mirna):
 
 	for mirna in mirna2dis:
 		ageslst1.append(mirna2age[mirna])
-		numdislst1.append(len(mirna2dis[dis]))
+		numdislst1.append(len(mirna2dis[mirna]))
 
 	agedislen,agedis_pval = scs.spearmanr(ageslst1,numdislst1)
 
