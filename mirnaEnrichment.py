@@ -4,9 +4,9 @@ import os
 import string
 import matplotlib.pyplot as plt
 import numpy as np
-import scipy as scs
-import scipy.stats as sstats
 import random
+import scipy.stats as scs
+import time
 
 usage = """
 miRich analyzes enrichment levels for microRNA (miRNA) ages in diseases 
@@ -112,6 +112,9 @@ def makeplot(mirna2age):
 	ax.set_xticklabels(ranger)
 	plt.bar(pos,freq,width)
 	plt.xlim(pos.min(),pos.max()+width)
+	plt.xlabel("Ages")
+	plt.ylabel("Frequency")
+	plt.title("miRNA Age Frequencies")
 	if not os.path.exists("results"):
 		os.makedirs("results")
 	os.chdir("results")
@@ -142,6 +145,141 @@ def makeplot(mirna2age):
 		fle.write(str(key) + "\t" + str(agesbin[key]) + "\n")
 	
 	plt.close()
+
+
+def agenumber(num,lst):
+	counter = 0
+	for el in lst:
+		if el == num:
+			counter += 1
+	return counter
+
+
+def enrichfrac(dis2mirna,mirna2age,dis,endpt):
+	diseases = dis2mirna[dis]
+	ages = sorted(dictmap(mirna2age, diseases))
+	perarray = [0] * int(endpt + 1)
+	
+
+	for index,val in enumerate(perarray):
+		perarray[index] = float(agenumber(index, ages)) / float(len(ages))
+
+	return perarray
+
+
+# creds to pyplot documentation
+
+def makenrichplots(dis2mirna,mirna2age):
+	os.chdir("..")
+	if not os.path.exists("diseasecomp"):
+		os.makedirs("diseasecomp")
+	os.chdir("diseasecomp")
+
+
+	allages = sorted(mirna2age.values())
+	maxage,minage = max(allages), min(allages)
+
+	bgsp = [0] * int(maxage + 1)
+
+	for index, val in enumerate(bgsp):
+		bgsp[index] = float(agenumber(index,allages)) / float(len(allages))
+
+
+	os.chdir("..")
+
+	os.chdir("txtfiles")
+
+	fle = open("disvsbg.txt","w")
+
+	PREAMBLE = "DISEASE\tAVG AGE\tMED AGE\tPVALUE\n"
+	PREAMBLE += "Background\t%.4f\t%.4f\t\n" %(np.mean(allages),np.median(allages))
+
+	fle.write(PREAMBLE)
+
+	os.chdir("..")
+
+	os.chdir("diseasecomp")
+
+
+
+### YO VIR SHOULD WE ACCOUNT FOR WHEN THERE ARE LESS THAN 4 MIRNAS?
+
+	num4dis = 0
+
+	for dis in dis2mirna:
+		if len(dis2mirna[dis]) > 3:
+			num4dis += 1
+
+	bgv = {}
+
+	counter = 0
+
+	
+	for index,dis in enumerate(dis2mirna):
+	
+		if len(dis2mirna[dis]) > 3:
+
+			N = maxage
+			
+			ind = np.arange(N + 1)  # the x locations for the groups
+			width = 0.35       # the width of the bars
+
+			fig = plt.figure()
+			ax = fig.add_subplot(111)
+
+			
+			rects1 = ax.bar(ind, bgsp, width, color='#990000' )
+
+			dsp = enrichfrac(dis2mirna, mirna2age, dis, maxage)
+			rects2 = ax.bar(ind+width, dsp, width, color="black")
+
+
+			mwu, mwu_pval = scs.mannwhitneyu(allages, dictmap(mirna2age,dis2mirna[dis]))
+			mwu_str = 'Mann-Whitney U test: U = %.2g (p = %.3g)' % (mwu, mwu_pval)
+
+
+			# add some
+			ax.set_ylabel('Percentages')
+			ax.set_title('miRNA Age Enrichments \n' + mwu_str)
+			ax.set_xticks(ind)
+
+			
+
+			
+			
+
+
+			ymin = ax.viewLim.ymin
+			ymax = ax.viewLim.ymax
+			y_range = ymax - ymin
+			ax.set_ylim(-.05 * y_range, ymax + (.23 * y_range))
+			
+			ax.legend( (rects1[0], rects2[0]), ('Background (N = ' + str(len(mirna2age)) +")" , 'Disease (N = ' +str(len( dis2mirna[dis])  ) + ")") ) 
+
+			plt.savefig(dis.replace(" ","") + ".png")
+			
+			plt.close()
+
+			var1 = np.mean(dictmap(mirna2age,dis2mirna[dis]))
+
+			var2 = np.median(dictmap(mirna2age,dis2mirna[dis]))
+
+			
+			fle.write("%s\t%i\t%.4f\t%.4f\t%.4e\n" % (dis, len(dis2mirna[dis]), var1 , var2, mwu_pval))
+
+			counter += 1
+			
+			print "enrichment plot " + str(counter) + " of " + str(num4dis)
+
+	fle.close()
+	return 
+
+
+
+
+
+
+
 
 def validcheck(el,posmirna):
 	returner = []
@@ -235,47 +373,82 @@ def dictmap(dic, lst):
 
 def randomages(kids2age,length):
 	allages = kids2age.values()
-	agedicts = []
+	avage = []
+	stdage = []
 	for i in range(0,10000):
 		ages = random.sample(allages, length)
 
-		agedicts.append(np.mean(ages))
-	return agedicts
+
+		avage.append(np.mean(ages))
+		stdage.append(np.std(ages))
+
+	return avage,stdage
 
 
 def famagetesting(fam2kids,kids2age):
+	print "FAMILY AGE ANALYSIS"
 	famaverage = {}
-	fammedian = {}
 	famstd = {}
-	fam2random = {}
+	famramavg = {}
+	famramstd = {}
 	for fam in fam2kids:
-		if fam2kids[fam] != []:
+		if len(fam2kids[fam]) > 1 :
 			famaverage[fam] = np.mean(dictmap(kids2age, fam2kids[fam]))
-			fammedian[fam] = np.median(dictmap(kids2age, fam2kids[fam]))
+			famstd[fam] = np.std(dictmap(kids2age, fam2kids[fam]))
 
 	number = 0
-	famnum = len(fam2kids.keys())		
+	famnum = len(famstd.keys())		
 	for fam in fam2kids:
-		fam2random[fam] = randomages(kids2age, len(fam2kids[fam]))
-		number += 1
-		print "family completed:", number, "out of ", famnum
+		if len(fam2kids[fam]) > 1 :
+			famramavg[fam],famramstd[fam] = randomages(kids2age, len(fam2kids[fam]))
+			number += 1
+			print "family ",number, "out of ", famnum, "completed"
 
 
-	empps = {}
 
-	for fam in fam2random:
+
+
+	
+
+	avgp = {}
+	stdp = {}
+
+	for fam in famramavg:
 		counter = 0
-# anything more efficient than this?
+		count2 = 0
 
-		for el in fam2random[fam]:
+		for el in famramavg[fam]:
 			if abs(float(famaverage[fam]) - float(el))  < .0001:
 				counter += 1
+		for var in famramstd[fam]:
+			if abs(float(famstd[fam]) - float(var)) < .0001:
+				count2 += 1
 
-		empps[fam] = float(counter) / float(10000)
+
+
+		avgp[fam] = float(counter) / float(10000)
+		stdp[fam] = float(count2) / float(10000)
 
 
 
-	return empps	
+
+	fle = open("famavage.txt","w")
+
+	fle.write("family"+"\t"+"# of mem"+ "\t"+"avg age"+"\t"+"avg p-value" + "\n")
+
+	for fam in avgp:
+		fle.write(str(str(fam) + "\t" + str(len(fam2kids[fam])) +"\t"+ str(round(famaverage[fam],4))  + "\t"  + str(round(avgp[fam],4))   + "\n"))
+
+	fle.close()
+	fle = open("famstdage.txt","w")
+
+	fle.write("family"+"\t"+"# of mem"+ "\t"+"std of age"+"\t"+"std p-value" + "\n")
+
+	for fam in stdp:
+		fle.write(str(str(fam) + "\t" + str(len(fam2kids[fam])) +"\t"+ str(round(famstd[fam],4)) +"\t" + str(round(stdp[fam],4))   + "\n"))
+
+	return 	
+
 
 
 
@@ -345,8 +518,28 @@ def main():
 	dis2age, age2dis, mirnanodis = disagedict(dis2mirna, mirna2age, mirna2dis)
 	
 
-	empiricalps = famagetesting(fam2kids, mirna2age)
-	print empiricalps
+
+
+	if famfle != "":
+		# famagetesting(fam2kids, mirna2age)
+		x = 6
+
+		print "FAMILY AGE ANALYSIS COMPLETED"
+	print "--------------------------------------------------"
+	print "DISEASE AGE ENRICHMENT"
+
+	print "NOTE: IMAGES GENERATED ONLY FOR DISEASES WITH MORE THAN 4 ASSOCIATED MIRNAS"
+	time.sleep(2)
+
+
+	makenrichplots(dis2mirna,mirna2age)
+
+	print "PLOT GENERATION COMPLETED"
+	print "FINAL CORRELATIONS"
+
+	othercors(mirna2age,mirna2dis,dis2mirna)
+
+
 
 	
 
