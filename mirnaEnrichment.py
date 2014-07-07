@@ -450,40 +450,51 @@ def famagetesting(fam2kids,kids2age):
 	return 	
 
 
+# Determine two correlations:
+
+# Correlation between the age of a disease miRNA and the number of diseases it's associated with
+# Correlation between the age of a disease miRNA
+
 
 def othercorrs(mirna2age,mirna2dis,dis2mirna):
 	ageslst1 = []
 	numdislst1 = []
-
+	enum = []
 	for mirna in mirna2dis:
 		ageslst1.append(mirna2age[mirna])
 		numdislst1.append(len(mirna2dis[mirna]))
+		enum.append((int(mirna2age[mirna]),  len(mirna2dis[mirna]) ))
 
 	agedislen,agedis_pval = scs.spearmanr(ageslst1,numdislst1)
 
-	agesbin = []
-	howmany = []
+	agebins = []
 
-	for i in range(0, int(max(mirna2age.values()))+1 ):
-		agesbin.append(i)
-		howmany.append(0)
+	for i in range(0,int(max(mirna2age.values()) + 1)):
+		agebins.append([])
+
+
+
+	for age,length in enum:
+		print age
+		agebins[age].append(length)
+
+	plt.close()
+
+	plt.title("Test Nigga!") 
+
+	plt.boxplot(agebins)
+	plt.show()
+	plt.close()
+
+
+
+
+
 
 
 	
-	
 
-	dismir = mirna2dis.keys()
 
-	for mir in dismir:
-		var = int(mirna2age[mir])
-		howmany[var]+=1
-
-	print agesbin
-	print howmany
-
-	disagetend,disagetend_pval = scs.spearmanr(howmany,agesbin)
-
-	print disagetend,disagetend_pval
 
 
 	return
@@ -570,7 +581,7 @@ def main():
 	print "DISEASE AGE ENRICHMENT"
 
 	print "NOTE: IMAGES GENERATED ONLY FOR DISEASES WITH MORE THAN 4 ASSOCIATED MIRNAS"
-	time.sleep(2)
+	# time.sleep(2)
 
 
 	# makenrichplots(dis2mirna,mirna2age)
