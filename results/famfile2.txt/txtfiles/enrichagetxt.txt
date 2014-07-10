@@ -1,3 +1,0 @@
-Correlation between the age of a miRNA and the number of enrichments it is associated with
-Coefficient: 0.2760
-p-value: 3.8079e-14

@@ -11,8 +11,7 @@ import matplotlib.axes as axis
 import pylab
 
 usage = """
-mirVIR analyzes enrichment levels for microRNA (miRNA) ages in diseases or any other enrichments 
-or any other biological processes related to miRNAs. 
+mirVIR analyzes enrichment levels for microRNA (miRNA) ages in diseases or any other classes 
 
 Tabs are used to separate the elements of each line.
 
@@ -45,7 +44,7 @@ UPREGULATE DOWNREGULATE????
 -y: specifies the format of the ages presented in the age file. If the user gives a parameter that starts with the letter m ('mya', 'million-years-ago',
 	'muffin'), then the program interprets the age readings as actual ages rather than distances on a phylogenetic tree
 
-If you wish for the enrichment you study to be miRNA families, simply replace the disease file with the family file. If you would like 
+If you wish for the miRNA feature you study to be miRNA families, simply replace the disease file with the family file. If you would like 
 the complte age analyses, please repeat using the -f command
 
 
@@ -166,6 +165,8 @@ def makeplot(mirna2age,disfle):
 
 	fle = open("agecounts.txt","w")
 
+	fle.write("AGE\tCOUNT\n")
+
 	for key in agesbin:
 		fle.write(str(key) + "\t" + str(agesbin[key]) + "\n")
 	
@@ -216,8 +217,8 @@ def makenrichplots(dis2mirna,mirna2age):
 
 	fle = open("disvsbg.txt","w")
 
-	PREAMBLE = "ENRICHMENT\tAVG AGE\tMED AGE\tPVALUE\n"
-	PREAMBLE += "Background\t%.4f\t%.4f\t\n" %(np.mean(allages),np.median(allages))
+	PREAMBLE = "CLASS\tNUM MEM\tAVG AGE\tMED AGE\tPVALUE\n"
+	PREAMBLE += "Background\t%i\t%.4f\t%.4f\t\n" %(len(allages),np.mean(allages),np.median(allages))
 
 	fle.write(PREAMBLE)
 
@@ -265,7 +266,7 @@ def makenrichplots(dis2mirna,mirna2age):
 
 			# add some
 			ax.set_ylabel('Percentages')
-			ax.set_title('miRNA Age Enrichments \n' + mwu_str)
+			ax.set_title('miRNA Age Distribution Comparison \n' + mwu_str)
 			ax.set_xticks(ind)
 
 			ymin = ax.viewLim.ymin
@@ -273,7 +274,7 @@ def makenrichplots(dis2mirna,mirna2age):
 			y_range = ymax - ymin
 			ax.set_ylim(-.05 * y_range, ymax + (.23 * y_range))
 			
-			ax.legend( (rects1[0], rects2[0]), ('Background (N = ' + str(len(mirna2age)) +")" , 'Enrichment (N = ' +str(len( dis2mirna[dis])  ) + ")") ) 
+			ax.legend( (rects1[0], rects2[0]), ('Background (N = ' + str(len(mirna2age)) +")" , 'Class (N = ' +str(len( dis2mirna[dis])  ) + ")") ) 
 
 			plt.savefig(dis.replace(" ","") + ".png")
 			
@@ -407,24 +408,24 @@ def randomages(kids2age,length):
 	return avage,stdage
 
 
-def famagetesting(fam2kids,kids2age):
-	print "FAMILY AGE ANALYSIS"
-	famaverage = {}
-	famstd = {}
-	famramavg = {}
-	famramstd = {}
-	for fam in fam2kids:
-		if len(fam2kids[fam]) > 1 :
-			famaverage[fam] = np.mean(dictmap(kids2age, fam2kids[fam]))
-			famstd[fam] = np.std(dictmap(kids2age, fam2kids[fam]))
+def classagetesting(dis2mirna,kids2age):
+	print "CLASS AGE ANALYSIS"
+	clsaverage = {}
+	clsstd = {}
+	clsramavg = {}
+	clsramstd = {}
+	for cls in dis2mirna:
+		if len(dis2mirna[cls]) > 1 :
+			clsaverage[cls] = np.mean(dictmap(kids2age, dis2mirna[cls]))
+			clsstd[cls] = np.std(dictmap(kids2age, dis2mirna[cls]))
 
 	number = 0
-	famnum = len(famstd.keys())		
-	for fam in fam2kids:
-		if len(fam2kids[fam]) > 1 :
-			famramavg[fam],famramstd[fam] = randomages(kids2age, len(fam2kids[fam]))
+	clsnum = len(clsstd.keys())		
+	for cls in dis2mirna:
+		if len(dis2mirna[cls]) > 1 :
+			clsramavg[cls],clsramstd[cls] = randomages(kids2age, len(dis2mirna[cls]))
 			number += 1
-			print "family ",number, "out of ", famnum, "completed"
+			print "CLASS ",number, "out of ", clsnum, "completed"
 
 
 
@@ -435,41 +436,42 @@ def famagetesting(fam2kids,kids2age):
 	avgp = {}
 	stdp = {}
 
-	for fam in famramavg:
+	for cls in clsramavg:
 		counter = 0
 		count2 = 0
 
-		for el in famramavg[fam]:
-			if abs(float(famaverage[fam]) - float(el))  < .0001:
+		for el in clsramavg[cls]:
+			if abs(float(clsaverage[cls]) - float(el))  < .0001:
 				counter += 1
-		for var in famramstd[fam]:
-			if abs(float(famstd[fam]) - float(var)) < .0001:
+		for var in clsramstd[cls]:
+			if abs(float(clsstd[cls]) - float(var)) < .0001:
 				count2 += 1
 
 
 
-		avgp[fam] = float(counter) / float(10000)
-		stdp[fam] = float(count2) / float(10000)
+		avgp[cls] = float(counter) / float(10000)
+		stdp[cls] = float(count2) / float(10000)
 
 
 
 
-	fle = open("famavage.txt","w")
+	fle = open("clsavage.txt","w")
 
-	fle.write("family"+"\t"+"# of mem"+ "\t"+"avg age"+"\t"+"avg p-value" + "\n")
+	fle.write("CLASS"+"\t"+"# of mem"+ "\t"+"avg age"+"\t"+"avg p-value" + "\n")
 
-	for fam in avgp:
-		fle.write(str(str(fam) + "\t" + str(len(fam2kids[fam])) +"\t"+ str(round(famaverage[fam],4))  + "\t"  + str(round(avgp[fam],4))   + "\n"))
+	for cls in avgp:
+		
+		fle.write("%s\t%i\t%.2f\t%.4e\n" %(cls, len(dis2mirna[cls]), clsaverage[cls], avgp[cls]))
 
-	fle.close()
-	fle = open("famstdage.txt","w")
 
-	fle.write("family"+"\t"+"# of mem"+ "\t"+"std of age"+"\t"+"std p-value" + "\n")
+	fle = open("clsstdage.txt","w")
 
-	for fam in stdp:
-		fle.write(str(str(fam) + "\t" + str(len(fam2kids[fam])) +"\t"+ str(round(famstd[fam],4)) +"\t" + str(round(stdp[fam],4))   + "\n"))
+	fle.write("CLASS"+"\t"+"# of mem"+ "\t"+"std of age"+"\t"+"std p-value" + "\n")
 
-	return 	
+	for cls in stdp:
+		fle.write("%s\t%i\t%.2f\t%.4e\n" %(cls, len(dis2mirna[cls]), clsstd[cls], stdp[cls]))
+
+	return 
 
 
 # Correlation between the age of a disease miRNA and the number of diseases it's associated with.
@@ -488,6 +490,7 @@ def othercorrs(mirna2age,mirna2dis,dis2mirna):
 
 	agedislen,agedis_pval = scs.spearmanr(ageslst1,numdislst1)
 
+
 	agebins = []
 
 	for i in range(0,int(max(mirna2age.values()) + 1)):
@@ -501,7 +504,7 @@ def othercorrs(mirna2age,mirna2dis,dis2mirna):
 
 	fle = open("enrichagetxt.txt","w")
 
-	fle.write("Correlation between the age of a miRNA and the number of enrichments it is associated with\n")
+	fle.write("Correlation between the age of a miRNA and the number of classes it is associated with\n")
 	fle.write("Coefficient: %.4f\n" % (agedislen))
 	fle.write("p-value: %.4e\n" % (agedis_pval))
 	fle.close()
@@ -509,9 +512,9 @@ def othercorrs(mirna2age,mirna2dis,dis2mirna):
 	plt.close()
 	
 
-	plt.title("miRNA-Enrichment Association Relationships")
+	plt.title("miRNA-Class Association Relationships")
 	plt.xlabel("Age Bins") 
-	plt.ylabel('Number of Enrichment Associations')
+	plt.ylabel('Number of Class Associations')
 
 	plt.boxplot(agebins)
 
@@ -624,19 +627,17 @@ def main():
 
 
 
-	if famfle != "":
-		# famagetesting(fam2kids, mirna2age)
-		print "FAMILY AGE ANALYSIS COMPLETED"
+	classagetesting(dis2mirna, mirna2age)
 
 
 	print "--------------------------------------------------"
 	print "AGE ENRICHMENTS"
 
-	print "NOTE: IMAGES ONLY GENERATED FOR ENRICHMENTS WITH MORE THAN 4 ASSOCIATED MIRNAS"
+	print "NOTE: IMAGES ONLY GENERATED FOR CLASSES WITH 4 OR MORE ASSOCIATED MIRNAS"
 	time.sleep(2)
 
 
-	# makenrichplots(dis2mirna,mirna2age)
+	makenrichplots(dis2mirna,mirna2age)
 
 	print "PLOT GENERATION COMPLETED"
 
@@ -646,22 +647,6 @@ def main():
 
 	if myaorother[0] == "m":
 		milyearanalysis(mirna2age)
-
-
-	
-
-
-
-
-
-
-
-##### Doing some of these analyses makes sense for diseases, but not for other enrichments
-	
-
-
-
-
 
 
 
