@@ -1,3 +1,0 @@
-Correlation between the age of a miRNA and the number of classes it is associated with
-Coefficient: 0.6934
-p-value: 1.8085e-75

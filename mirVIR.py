@@ -10,12 +10,13 @@ import time
 import matplotlib.axes as axis
 import pylab
 
+
 usage = """
 mirVIR analyzes enrichment levels for microRNA (miRNA) ages in diseases or any other classes 
 
 Tabs are used to separate the elements of each line.
 
-DEPENDENCIES: NumPy, matplotlib, and SciPy
+DEPENDENCIES: NumPy, matplotlib, DendropPy, and SciPy
 Pip (https://pypi.python.org/pypi/pip) provides the simplest way to install each dependency
 
 Command line arguments:
@@ -109,38 +110,66 @@ def select(lst, setting):
 
 	return el
 	
+def treelables(treefile):
+
+	fle = open(treefile,"r")
+	text = fle.readlines()
+	fle.close()
+	labeldict = {}
+
+	for line in text:
+		if line[0] == "#":
+			continue
+		pie = string.replace(line, "\n", "")
+		pie = pie.split("\t")
+		labeldict[float(pie[-1])] = pie[0]
+	return labeldict
 
 
 
-def makeplot(mirna2age,disfle):
-	binlst = map(int, mirna2age.values())
-	binlst.sort()
-	ranger = range(0,binlst[-1]+1)
 
-	freq = np.bincount(np.array(binlst),weights=None)
 
-	pos = np.arange(len(ranger))
-	width = 1.0
-	ax = plt.axes()
-	ax.set_xticks(pos + (width / 2))
-	ax.set_xticklabels(ranger)
-	plt.bar(pos,freq,width)
-	plt.xlim(pos.min(),pos.max()+width)
-	plt.xlabel("Ages")
-	plt.ylabel("Frequency")
-	plt.title("miRNA Age Frequencies")
-	if not os.path.exists("results"):
-		os.makedirs("results")
-	os.chdir("results")
+def makeplot(mirna2age,disfle,treefle=""):
+	
 
-	filename = disfle
-	filename  = filename.split("/")
+	taxdict = treelables(treefle)
 
-	filename = filename[-1]
 
-	if not os.path.exists(filename):
-		os.makedirs(filename)
-	os.chdir(filename)
+	data = mirna2age.values()
+	alldata = sorted(data)
+	labs = sorted(list(set(data)))
+
+	labels = []
+
+	for i in range(len(labs)):
+		labels.append(taxdict[float(labs[i])])
+
+	howmany = {}
+	for el in labs:
+		howmany[el] = 0
+
+	for el in alldata:
+		howmany[el] += 1
+
+
+
+
+
+	bins = []
+
+	for el in labs:
+		bins.append(howmany[el])
+
+	left = range(len(bins))
+
+	plt.bar(left, bins)
+	plt.xticks(left,labels,rotation=35)
+	plt.title("miRViewer Ages Bincount - New Fam Definition")
+	plt.xlabel("Frequency of Ages")
+
+
+
+
 
 	if not os.path.exists("bincounts"):
 		os.makedirs("bincounts")	
@@ -150,28 +179,9 @@ def makeplot(mirna2age,disfle):
 	
 	os.chdir("bincounts")
 
-	plt.savefig("agesbincount.png")
+	plt.savefig("agesbincount.png", bbox_inches='tight')
 
-	os.chdir("..")
-	os.chdir("txtfiles")
-
-	agesbin = {}
-
-	for el in mirna2age.values():
-		if el not in agesbin:
-			agesbin[el] = 1
-		else:
-			agesbin[el] += 1
-
-	fle = open("agecounts.txt","w")
-
-	fle.write("AGE\tCOUNT\n")
-
-	for key in agesbin:
-		fle.write(str(key) + "\t" + str(agesbin[key]) + "\n")
-	
-	plt.close()
-
+	return
 
 def agenumber(num,lst):
 	counter = 0
@@ -225,8 +235,6 @@ def makenrichplots(dis2mirna,mirna2age):
 	os.chdir("..")
 
 	os.chdir("enrichcomp")
-
-
 
 ### YO VIR SHOULD WE ACCOUNT FOR WHEN THERE ARE LESS THAN 4 MIRNAS?
 
@@ -428,11 +436,6 @@ def classagetesting(dis2mirna,kids2age):
 			print "CLASS ",number, "out of ", clsnum, "completed"
 
 
-
-
-
-	
-
 	avgp = {}
 	stdp = {}
 
@@ -512,25 +515,11 @@ def othercorrs(mirna2age,mirna2dis,dis2mirna):
 	plt.close()
 	
 
-	plt.title("miRNA-Class Association Relationships")
+	plt.title("miRNA-Class Association Relationships\nCorrelation between the age of a miRNA and the number of classes it is associated with: %.4f\n P-Value: %.4e\n " %(agedislen,agedis_pval))
 	plt.xlabel("Age Bins") 
 	plt.ylabel('Number of Class Associations')
 
-	plt.boxplot(agebins)
-
-	pylab.xticks([x+1 for x in numberlst],numberlst)
 	
-
-	os.chdir("..")
-
-	if not os.path.exists("diseasecor"):
-		os.makedirs("diseasecor")
-
-	os.chdir("diseasecor")
-
-	plt.savefig("mirnadisrel.png")
-	plt.close()
-
 
 
 
@@ -559,7 +548,32 @@ def milyearanalysis(mirna2age):
 	for index,el in enumerate(agematrix):
 		fle.write("%.2f new miRNAs per million years between %.2f MYA and %.2f MYA\n" %(el, years[index], years[index+1] )  )
 
-	return 
+	return
+
+
+def  graphs(mirna2age,mirna2dis,dis2mirna):
+	mirnaages = []
+	numdis = []
+	for mirna in mirna2dis:
+		if mirna not in mirna2age:
+			continue
+		else:
+			mirnaages.append(mirna2age[mirna])
+			numdis.append(len(mirna2dis[mirna]))
+
+
+
+	plt.scatter(mirnaages, numdis)
+	plt.title("The Age of a of a microRNA Versus Number of Associated Diseases\n.693 Correlation (p-value: 1.8e-75)")
+	plt.xlabel("Age of microRNAs")
+	plt.ylabel("Number of Diseases for the microRNA")
+
+	plt.savefig("agevsnumberofdis.png")
+	
+
+
+
+
 
 
 def main():
@@ -582,6 +596,7 @@ def main():
 	famfle = ""
 	treefle = ""
 	myaorother = "v"
+	print opts
 
 	for el in opts:
 		if el[0] == "-h":
@@ -602,6 +617,8 @@ def main():
 		sys.exit("YOU MUST HAVE AN AGE FILE")
 	if enrichfle == "":
 		sys.exit("YOU MUST HAVE AN ASSOCIATION FILE")
+	if treefle == "":
+		sys.exit("PROGRAM WORKS BEST WITH TREE FILE")
 
 
 	#			
@@ -609,7 +626,7 @@ def main():
 	mirna2age,age2mirna = mirnaagedicts(agefle)
 	
 	mirnawage = mirna2age.keys()
-	makeplot(mirna2age,enrichfle)
+	makeplot(mirna2age,enrichfle,treefle)
 	dis2mirna, mirna2dis = diseasedict(enrichfle,mirna2age)
 	
 	mirnawdis = dis2mirna.keys()
@@ -627,17 +644,17 @@ def main():
 
 
 
-	classagetesting(dis2mirna, mirna2age)
+	# classagetesting(dis2mirna, mirna2age)
 
 
 	print "--------------------------------------------------"
 	print "AGE ENRICHMENTS"
 
 	print "NOTE: IMAGES ONLY GENERATED FOR CLASSES WITH 4 OR MORE ASSOCIATED MIRNAS"
-	time.sleep(2)
+	# time.sleep(2)
 
 
-	makenrichplots(dis2mirna,mirna2age)
+	# makenrichplots(dis2mirna,mirna2age)
 
 	print "PLOT GENERATION COMPLETED"
 
@@ -648,6 +665,11 @@ def main():
 	if myaorother[0] == "m":
 		milyearanalysis(mirna2age)
 
+
+	# minianal(mirna2age,dis2mirna)
+
+
+	graphs(mirna2age,mirna2dis,dis2mirna)
 
 
 
